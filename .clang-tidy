@@ -1,0 +1,4 @@
+Checks: '-*,clang-analyzer-*,misc-unused-includes'
+WarningsAsErrors: ''
+HeaderFilterRegex: '.*'
+FormatStyle: none

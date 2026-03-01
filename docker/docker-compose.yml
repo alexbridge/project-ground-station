@@ -1,0 +1,22 @@
+services:
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    container_name: timescaledb
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=ground
+      - POSTGRES_USER=ground
+      - POSTGRES_DB=TELEMETRY
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - tsdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ground -d TELEMETRY"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  tsdata:
