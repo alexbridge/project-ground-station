@@ -8,12 +8,11 @@ services:
     environment:
       - POSTGRES_PASSWORD=ground
       - POSTGRES_USER=ground
-      - POSTGRES_DB=TELEMETRY
     volumes:
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
       - tsdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ground -d TELEMETRY"]
+      test: ["CMD-SHELL", "pg_isready -U ground -d GROUND_STATION"]
       interval: 10s
       timeout: 5s
       retries: 5

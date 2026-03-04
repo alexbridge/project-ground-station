@@ -1,12 +1,13 @@
-#include <csignal>
-#include <atomic>
 #include "hpp/telemetry-server.hpp"
+#include <atomic>
+#include <csignal>
 
-std::atomic<bool> running(true);
+std::atomic<bool> running{true};
 
-int main()
-{
-    std::signal(SIGINT, signalHandler);
+int main() {
+  struct sigaction sa {};
+  sa.sa_handler = signalHandler;
+  sigaction(SIGINT, &sa, nullptr);
 
-    return runServer();
+  return runServer();
 }

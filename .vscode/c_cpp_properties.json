@@ -8,7 +8,8 @@
             "intelliSenseMode": "linux-clang-x64",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/usr/include"
+                "/usr/include",
+                "/usr/include/c++/13"
             ],
             "defines": []
         }
