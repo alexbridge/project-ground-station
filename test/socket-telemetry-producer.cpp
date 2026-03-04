@@ -90,6 +90,9 @@ int main(int argc, char const *argv[])
 
         printPacket(packet);
 
+        // Host to network
+        hton(packet);
+
         ssize_t sent = send(
             client_fd,
             reinterpret_cast<const char *>(&packet),

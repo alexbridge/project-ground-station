@@ -183,6 +183,9 @@ int runServer()
                 break;
             }
 
+            // Net to host
+            ntoh(packet);
+
             printAscii(packet);
             printPacket(packet);
 

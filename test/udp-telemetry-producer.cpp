@@ -80,6 +80,11 @@ int main(int argc, char const *argv[])
     {
         TelemetryPacket packet = generateTelemetry(rangeStart, rangeEnd);
 
+        printPacket(packet);
+
+        // Host to network
+        hton(packet);
+
         ssize_t sent = sendto(
             client_fd,
             reinterpret_cast<const char *>(&packet),

@@ -19,6 +19,17 @@ int runServer()
         return 1;
     }
 
+    int reuse = 1;
+    setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
+
+    int bufSize = 10 * 10; // 10 packet at once
+    setsockopt(sock_fd, SOL_SOCKET, SO_SNDBUF, &bufSize, sizeof(bufSize));
+
+    int actual;
+    socklen_t len = sizeof(actual);
+    getsockopt(sock_fd, SOL_SOCKET, SO_SNDBUF, &actual, &len);
+    printf("SND buffer: %d bytes\n", actual);
+
     sockaddr_un addr{};
     addr.sun_family = AF_UNIX;
     std::strncpy(addr.sun_path, TELEMETRY_SOCK_PATH, sizeof(addr.sun_path) - 1);
