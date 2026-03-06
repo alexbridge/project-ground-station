@@ -1,85 +1,108 @@
-#include "telemetry-storage.hpp"
+#include "telemetry-storage.h"
+#include <cstring>
 #include <ctime>
+#include <iostream>
 #include <pqxx/pqxx>
+#include <string>
 
-constexpr static const char *TM_STORAGE_HOST = "localhost";
-constexpr static const char *TM_STORAGE_PORT = "5432";
-constexpr static const char *TM_STORAGE_DB = "GROUND_STATION";
-constexpr static const char *TM_STORAGE_TABLE = "TELEMETRY";
-constexpr static const char *TM_STORAGE_USER = "ground";
-constexpr static const char *TM_STORAGE_PASS = "ground";
+namespace app
+{
 
-bool TelemetryStorage::connected() const {
-  return conn != nullptr && conn->is_open();
+constexpr const char *TM_STORAGE_HOST = "localhost";
+constexpr const char *TM_STORAGE_PORT = "5432";
+constexpr const char *TM_STORAGE_DB = "GROUND_STATION";
+constexpr const char *TM_STORAGE_TABLE = "TELEMETRY";
+constexpr const char *TM_STORAGE_USER = "ground";
+constexpr const char *TM_STORAGE_PASS = "ground";
+
+TelemetryStorageState TelemetryStorage::connect()
+{
+    std::string connStr = std::string("host=") + TM_STORAGE_HOST
+                          + " port=" + TM_STORAGE_PORT
+                          + " dbname=" + TM_STORAGE_DB
+                          + " user=" + TM_STORAGE_USER
+                          + " password=" + TM_STORAGE_PASS;
+
+    try {
+        conn_ = std::make_unique<pqxx::connection>(connStr);
+        state_ = TelemetryStorageState::CONNECTED;
+        return state_;
+    } catch (const std::exception &e) {
+        std::cerr << "DB Connection Error: " << e.what() << ". Retrying in 1s..." << std::endl;
+        state_ = TelemetryStorageState::ERROR;
+        return state_;
+    }
 }
 
-bool TelemetryStorage::connect() {
-  char conn_str[256];
-  snprintf(conn_str, sizeof(conn_str),
-           "host=%s port=%s dbname=%s user=%s password=%s", TM_STORAGE_HOST,
-           TM_STORAGE_PORT, TM_STORAGE_DB, TM_STORAGE_USER, TM_STORAGE_PASS);
-
-  try {
-    conn = std::make_unique<pqxx::connection>(conn_str);
-    std::cout << "Connected to " << TM_STORAGE_HOST << "/" << TM_STORAGE_DB
-              << std::endl;
-    return true;
-  } catch (const std::exception &e) {
-    std::cerr << "DB Connection Error: " << e.what() << ". Retrying in 1s..."
-              << std::endl;
-    return false;
-  }
-}
-
-void TelemetryStorage::flush() {
-  if (batch.empty() || !conn) {
-    return;
-  }
-
-  try {
-    pqxx::work tx(*conn);
-
-    // Using stream_to to bulk insert into TELEMETRY table (v6.4.5 compatible)
-    // Columns: time, app_id, voltage
-    auto writer = pqxx::stream_to::table(tx, {TM_STORAGE_TABLE},
-                                         {"time", "app_id", "voltage"});
-
-    for (const auto &packet : batch) {
-      // Convert uint32_t timestamp (unix epoch) to a format Postgres
-      // understands
-
-      std::time_t t = static_cast<std::time_t>(packet.timestamp);
-
-      struct tm tm_buf;
-      gmtime_r(&t, &tm_buf);
-
-      char time_str[20];
-      std::strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", &tm_buf);
-
-      float voltage;
-      std::memcpy(&voltage, &packet.batteryV, sizeof(voltage));
-      writer << std::make_tuple(time_str, packet.appId, voltage);
+void TelemetryStorage::flush()
+{
+    if (batch_.empty()) {
+        return;
     }
 
-    writer.complete();
-    tx.commit();
+    if (!conn_) {
+        connect();
+        if (connect() != TelemetryStorageState::CONNECTED) {
+            // TODO Clear batch buffer for consequitive error
+            return;
+        }
+    }
 
-    batch.clear();
-  } catch (const std::exception &e) {
-    std::cerr << "DB Flush Error: " << e.what() << ". Resetting connection..."
-              << std::endl;
-    conn.reset();
-  }
+    try {
+        pqxx::work tx(*conn_);
+
+        // Using stream_to to bulk insert into TELEMETRY table (v6.4.5 compatible)
+        // Columns: time, app_id, voltage
+        auto writer = pqxx::stream_to::table(tx, {TM_STORAGE_TABLE}, {"time", "app_id", "voltage"});
+
+        for (const auto &packet : batch_) {
+            // Convert uint32_t timestamp (unix epoch) to a format Postgres
+            // understands
+
+            std::time_t t = static_cast<std::time_t>(packet.timestamp);
+
+            struct tm tm_buf;
+            gmtime_r(&t, &tm_buf);
+
+            char time_str[20];
+            std::strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", &tm_buf);
+
+            float voltage;
+            std::memcpy(&voltage, &packet.batteryV, sizeof(voltage));
+            writer << std::make_tuple(time_str, packet.appId, voltage);
+        }
+
+        writer.complete();
+        tx.commit();
+
+        batch_.clear();
+    } catch (const std::exception &e) {
+        std::cerr << "DB Flush Error: " << e.what() << ". Resetting connection..." << std::endl;
+
+        state_ = TelemetryStorageState::ERROR;
+        conn_.reset();
+    }
 }
 
-void TelemetryStorage::add(const TelemetryPacket &packet) {
-  batch.push_back(packet);
+void TelemetryStorage::add(const TelemetryPacket &packet)
+{
+    batch_.push_back(packet);
 
-  if (batch.size() >= batchSize) {
+    if (batch_.size() >= batchSize_) {
+        flush();
+    }
+}
+
+TelemetryStorage::TelemetryStorage(uint16_t batchSize)
+    : batchSize_(batchSize)
+{
+    batch_.reserve(batchSize);
+}
+
+TelemetryStorage::~TelemetryStorage()
+{
+    // any remaining
     flush();
-  }
 }
 
-TelemetryStorage::TelemetryStorage() { batch.reserve(batchSize); }
-
-TelemetryStorage::~TelemetryStorage() = default;
+} // namespace app
