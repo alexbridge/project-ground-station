@@ -20,13 +20,9 @@ CCC_OPTS_COMPILE := $(CCC_OPTS) -c
 
 install-deps:
 	sudo apt install clang
+	sudo apt install cmake
 	sudo apt install valgrind
 	sudo apt install libpqxx-dev
-	sudo apt install bear
-install-code:
-	bear -- make
-	cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
-	ln -s build/compile_commands.json .
 
 IMAGE_BUILDER := clang/clang17:builder
 IMAGE_RUNNER := clang/clang17:runner

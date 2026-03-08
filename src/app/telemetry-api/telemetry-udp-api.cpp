@@ -1,25 +1,21 @@
 
 
-#include "apps/udp-to-af-unix-server/udp-to-af-unix-server.h"
+#include "app/telemetry-api/telemetry-udp-api.h"
 #include "socket/udp-socket.h"
-#include "telemetry-server/hpp/telemetry-server.hpp"
 #include <cstdint>
 #include <iostream>
 #include <memory>
 #include <ostream>
 #include <string>
+
 namespace app
 {
+TelemetryUdpApi::TelemetryUdpApi(
+    uint16_t sockPort,
+    std::string sockPath) : udpSock_{std::make_unique<lib::UdpSocket>(sockPort)},
+                            afUnixSock_{std::make_unique<lib::AfUnixUdpSocket>(std::move(sockPath))} {};
 
-// extern std::atomic<bool> running;
-
-UdpToAfUnixServer::UdpToAfUnixServer(uint16_t sockPort, std::string sockPath)
-{
-    lib::UdpSocket udpSock_{sockPort};
-    lib::AfUnixUdpSocket afUnixSock_{std::move(sockPath)};
-};
-
-UdpToAfUnixServerStartResult UdpToAfUnixServer::init()
+TelemetryUdpApiRun TelemetryUdpApi::init()
 {
     auto udpSockBindResult = udpSock_->bind();
     if (udpSockBindResult != lib::UdpSocketState::BIND) {
@@ -43,7 +39,7 @@ UdpToAfUnixServerStartResult UdpToAfUnixServer::init()
         std::string("OK")};
 }
 
-UdpToAfUnixServerStartResult UdpToAfUnixServer::run()
+TelemetryUdpApiRun TelemetryUdpApi::run()
 {
     auto in = init();
     if (!in.ok) {
@@ -86,7 +82,7 @@ UdpToAfUnixServerStartResult UdpToAfUnixServer::run()
         std::string("OK")};
 }
 
-void UdpToAfUnixServer::stop()
+void TelemetryUdpApi::stop()
 {
     running_ = false;
     auto udpSock = udpSock_->sockFd();
@@ -99,7 +95,7 @@ void UdpToAfUnixServer::stop()
     }
 }
 
-UdpToAfUnixServer::~UdpToAfUnixServer()
+TelemetryUdpApi::~TelemetryUdpApi()
 {
 }
 

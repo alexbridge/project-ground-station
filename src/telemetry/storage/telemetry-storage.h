@@ -1,7 +1,7 @@
 #ifndef APP_TELEMETRY_STORAGE_H
 #define APP_TELEMETRY_STORAGE_H
 
-#include "../hpp/telemetry.hpp"
+#include "telemetry/packet/telemetry-packet.hpp"
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -11,9 +11,11 @@ namespace pqxx
 class connection;
 } // namespace pqxx
 
-namespace app
+namespace telemetry
 {
-enum class TelemetryStorageState { INITIAL, CONNECTED, ERROR };
+enum class TelemetryStorageState { INITIAL,
+                                   CONNECTED,
+                                   ERROR };
 
 class TelemetryStorage
 {
@@ -38,6 +40,6 @@ private:
     std::vector<TelemetryPacket> batch_{};
     std::unique_ptr<pqxx::connection> conn_{nullptr};
 };
-} // namespace app
+} // namespace telemetry
 
 #endif

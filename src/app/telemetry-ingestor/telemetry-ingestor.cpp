@@ -1,43 +1,30 @@
-#include "apps/af-unix-telemetry-server/af-unix-telemetry-server.h"
-#include "hpp/telemetry-server.hpp"
-#include "hpp/telemetry.hpp"
-#include "socket/af-unix-socket.h"
-#include "socket/udp-socket.h"
-#include "spsc-queue/spsc-queue.hpp"
-#include "storage/telemetry-storage.hpp"
-#include <atomic>
-#include <csignal>
-#include <cstring>
-#include <iostream>
+#include "app/telemetry-ingestor/telemetry-ingestor.h"
+#include "libs/spsc-queue/spsc-queue.hpp"
+#include <memory>
 #include <string>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <thread>
-#include <unistd.h>
-#include <utility>
 
 namespace app
 {
 
 constexpr bool DEBUG_PACKETS = false;
 
-AfUnixTelemetryServer::AfUnixTelemetryServer(std::string sockPath)
-{
-    lib::AfUnixUdpSocket afUnixpSock_{std::move(sockPath)};
-}
-
-AfUnixTelemetryServerStartResult AfUnixTelemetryServer::run()
+TelemetryIngestor::TelemetryIngestor(std::string sockPath)
+    : afUnixSock_{std::make_unique<lib::AfUnixUdpSocket>(std::move(sockPath))},
+      spscQueue_{std::make_unique<lib::SPSCQueue<telemetry::TelemetryPacket>>()}
 {
 }
 
-void AfUnixTelemetryServer::stop()
+TelemetryIngestorStartResult TelemetryIngestor::run()
 {
 }
 
-void consume(SPSCQueue<TelemetryPacket> &spscQueue,
-             SPSCQueueStats &queueStats)
+void TelemetryIngestor::stop()
 {
-    TelemetryPacket packet{};
+}
+
+void TelemetryIngestor::consume()
+{
+    telemetry::TelemetryPacket packet{};
     TelemetryStorage telemetryStorage{};
 
     while (running) {
@@ -64,7 +51,7 @@ void consume(SPSCQueue<TelemetryPacket> &spscQueue,
     telemetryStorage.flush();
 };
 
-AfUnixTelemetryServerStartResult AfUnixTelemetryServer::run()
+TelemetryIngestorStartResult TelemetryIngestor::run()
 {
     auto bind = afUnixSock_->bind();
     if (bind != lib::AfUnixSocketState::BIND) {
