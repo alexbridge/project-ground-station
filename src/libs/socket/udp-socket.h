@@ -9,20 +9,51 @@
 namespace lib
 {
 
-enum class UdpSocketState { INITIAL, PRECONDITIONS, NO_SOCK, NO_SOCK_CONNECT, NO_SOCK_BIND, READY, CONNECT, BIND };
+#define UDP_SOCKET_STATE(X) \
+    X(INITIAL)              \
+    X(PRECONDITIONS)        \
+    X(NO_SOCK)              \
+    X(NO_SOCK_CONNECT)      \
+    X(NO_SOCK_BIND)         \
+    X(READY)                \
+    X(CONNECT)              \
+    X(BIND)
+
+enum class UdpSocketState {
+#define GENERATE_ENUM_VALUE(v) v,
+    UDP_SOCKET_STATE(GENERATE_ENUM_VALUE)
+#undef GENERATE_ENUM_VALUE
+};
+
+constexpr const char *toString(UdpSocketState s)
+{
+    switch (s) {
+#define GENERATE_CASE(v)    \
+    case UdpSocketState::v: \
+        return #v;
+        UDP_SOCKET_STATE(GENERATE_CASE)
+#undef GENERATE_CASE
+        default:
+            return "UNKNOWN";
+    }
+}
 
 class UdpSocket
 {
 public:
-    explicit UdpSocket(uint16_t sockPort) : sockPort_(sockPort){};
+    explicit UdpSocket(uint16_t sockPort)
+        : sockPort_(sockPort){};
 
     // As client
     UdpSocketState connect();
 
     // As server
+
     UdpSocketState bind();
 
     int sockFd() const;
+
+    uint16_t port() const;
 
     std::optional<int> actualBufSize() const;
 

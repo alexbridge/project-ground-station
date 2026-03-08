@@ -1,8 +1,12 @@
-#ifndef CLANG_TELEMETRY_SPSC
-#define CLANG_TELEMETRY_SPSC
+#ifndef LIBS_SPSC_QUEUE_H
+#define LIBS_SPSC_QUEUE_H
 
-#include <atomic>
 #include <array>
+#include <atomic>
+#include <cstddef>
+
+namespace lib
+{
 
 #ifdef __cpp_lib_hardware_interference_size
 static constexpr size_t cacheLine_ = std::hardware_destructive_interference_size;
@@ -10,8 +14,7 @@ static constexpr size_t cacheLine_ = std::hardware_destructive_interference_size
 static constexpr size_t cacheLine_ = 64;
 #endif
 
-struct SPSCQueueStats
-{
+struct SPSCQueueStats {
     size_t queue_pushed{0};
     size_t queue_dropped{0};
     size_t queue_read{0};
@@ -27,23 +30,25 @@ class SPSCQueue
     alignas(cacheLine_) std::atomic<size_t> tail{0};
 
 public:
+    SPSCQueueStats stats{};
+
     bool push(const T &data)
     {
         const size_t t = tail.load(std::memory_order_relaxed);
         const size_t next_tail = (t + 1) & (Size - 1);
-        if (next_tail == head.load(std::memory_order_acquire))
-        {
+        if (next_tail == head.load(std::memory_order_acquire)) {
+            stats.queue_dropped++;
             return false;
         }
         buffer[t] = data;
         tail.store(next_tail, std::memory_order_release);
+        stats.queue_pushed++;
         return true;
     }
     bool pop(T &out)
     {
         const size_t h = head.load(std::memory_order_relaxed);
-        if (h == tail.load(std::memory_order_acquire))
-        {
+        if (h == tail.load(std::memory_order_acquire)) {
             return false;
         }
 
@@ -51,8 +56,11 @@ public:
 
         out = buffer[h];
         head.store(next_head, std::memory_order_release);
+        stats.queue_read++;
         return true;
     }
 };
+
+} // namespace lib
 
 #endif

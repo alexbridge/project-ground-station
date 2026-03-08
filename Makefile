@@ -18,10 +18,15 @@ CCC_OPTS := -std=c++17 \
             -g -fsanitize=address,undefined -fno-omit-frame-pointer
 CCC_OPTS_COMPILE := $(CCC_OPTS) -c
 
-install:
+install-deps:
 	sudo apt install clang
 	sudo apt install valgrind
 	sudo apt install libpqxx-dev
+	sudo apt install bear
+install-code:
+	bear -- make
+	cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
+	ln -s build/compile_commands.json .
 
 IMAGE_BUILDER := clang/clang17:builder
 IMAGE_RUNNER := clang/clang17:runner
@@ -106,6 +111,20 @@ telemetry-udp-server:
 	src/telemetry-server/telemetry-server.cpp \
 	-o bin/udp_telemetry_server
 	./bin/udp_telemetry_server
+
+clangd-check:
+	@find . -type f \( -name '*.h' -o -name '*.cpp' \) | while read f; do \
+		output=$$(clangd --check="$$f" 2>&1); \
+		if [ $$? -gt 0 ]; then \
+			echo ""; \
+			echo "=== FAIL: $$f ==="; \
+			echo "$$output" | tail -7; \
+			echo "=== FAIL: $$f ==="; \
+			echo ""; \
+		else \
+			echo "OK: $$f"; \
+		fi \
+	done
 
 
 .PHONY: build-all

@@ -1,4 +1,5 @@
 #include "udp-socket.h"
+#include <cstdint>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -86,6 +87,11 @@ int UdpSocket::sockFd() const
 std::optional<int> UdpSocket::actualBufSize() const
 {
     return actualBufSize_;
+}
+
+uint16_t UdpSocket::port() const
+{
+    return sockPort_;
 }
 
 UdpSocket::~UdpSocket()

@@ -9,21 +9,40 @@
 namespace lib
 {
 
+#define UDP_SOCKET_STATE(X) \
+    X(INITIAL)              \
+    X(SOCK_PRECONDITIONS)   \
+    X(NO_SOCK)              \
+    X(NO_SOCK_CONNECT)      \
+    X(NO_SOCK_BIND)         \
+    X(READY)                \
+    X(CONNECT)              \
+    X(BIND)
+
 enum class AfUnixSocketState {
-    INITIAL,
-    SOCK_PRECONDITIONS,
-    NO_SOCK,
-    NO_SOCK_CONNECT,
-    NO_SOCK_BIND,
-    READY,
-    CONNECT,
-    BIND
+#define GENERATE_ENUM_VALUE(v) v,
+    UDP_SOCKET_STATE(GENERATE_ENUM_VALUE)
+#undef GENERATE_ENUM_VALUE
 };
+
+constexpr const char *toString(AfUnixSocketState s)
+{
+    switch (s) {
+#define GENERATE_CASE(v)       \
+    case AfUnixSocketState::v: \
+        return #v;
+        UDP_SOCKET_STATE(GENERATE_CASE)
+#undef GENERATE_CASE
+        default:
+            return "UNKNOWN";
+    }
+}
 
 class AfUnixUdpSocket
 {
 public:
-    explicit AfUnixUdpSocket(std::string sockPath) : sockPath_(std::move(sockPath)){};
+    explicit AfUnixUdpSocket(std::string sockPath)
+        : sockPath_(std::move(sockPath)){};
 
     // As client
     AfUnixSocketState connect();
