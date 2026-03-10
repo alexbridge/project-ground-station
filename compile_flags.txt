@@ -1,6 +1,0 @@
--std=c++17
--xc++
--Isrc
--Isrc/app
--Isrc/libs
--Isrc/telemetry

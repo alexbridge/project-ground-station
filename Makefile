@@ -25,7 +25,8 @@ install-deps:
 	sudo apt install libpq-dev
 
 init-vscode:
-	cmake -S . -B build
+	cmake -S . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+	ln -sf build/compile_commands.json compile_commands.json
 
 IMAGE_BUILDER := clang/clang17:builder
 IMAGE_RUNNER := clang/clang17:runner

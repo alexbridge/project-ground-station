@@ -1,6 +1,12 @@
 #ifndef LIB_LOGGER_H
 #define LIB_LOGGER_H
 
+#include "spdlog/logger.h"
+#include "spdlog/sinks/stdout_color_sinks.h"
+#include "spdlog/spdlog.h"
+#include <memory>
+#include <string>
+
 namespace lib
 {
 class Log

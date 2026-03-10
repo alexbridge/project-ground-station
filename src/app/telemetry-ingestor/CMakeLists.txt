@@ -11,10 +11,9 @@ include(FetchContent)
 
 FetchContent_Declare(
     libpqxx
-    GIT_REPOSITORY https:://github.com/jtv/libpqxx.github
-    GIT_TAG 7.9.0
+    GIT_REPOSITORY https://github.com/jtv/libpqxx.git
+    GIT_TAG 7.10.5
 )
-set(SKIP_BUILD_TEST ON CACHE BOOL "" FORCE)
-FetchContext_MakeAvailable(libqxx)
+FetchContent_MakeAvailable(libpqxx)
 
-target_link_libraries(telemetry_ingestor PRIVATE libqxx::pqxx)
+target_link_libraries(telemetry_ingestor PRIVATE libpqxx::pqxx)
