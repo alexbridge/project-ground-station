@@ -3,6 +3,7 @@
 
 #include "telemetry/packet/telemetry-packet.hpp"
 #include <cstdint>
+#include <fmt/core.h>
 #include <memory>
 #include <vector>
 

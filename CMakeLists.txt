@@ -23,3 +23,5 @@ add_subdirectory(src/libs)
 add_subdirectory(src/telemetry)
 add_subdirectory(src/app/telemetry-api)
 add_subdirectory(src/app/telemetry-ingestor)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

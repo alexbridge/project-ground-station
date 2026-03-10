@@ -1,10 +1,12 @@
-add_library(libs STATIC
-    socket/udp-socket.cpp
-    socket/af-unix-socket.cpp
-    logging/logger.cpp
-    )
+add_library(libs
+    STATIC
+        socket/udp-socket.cpp
+        socket/af-unix-socket.cpp
+)
 
-target_include_directories(libs PUBLIC ${CMAKE_SOURCE_DIR}/src/libs)
+# expose lib
+target_include_directories(libs PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-# External
+# External transient
+target_link_libraries(libs PUBLIC fmt::fmt)
 target_link_libraries(libs PUBLIC spdlog::spdlog)

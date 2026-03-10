@@ -9,7 +9,7 @@
 
 namespace lib
 {
-class Log
+class Logger
 {
 public:
     static void init()
@@ -20,8 +20,9 @@ public:
     static std::shared_ptr<spdlog::logger> get(const std::string &name)
     {
         auto logger = spdlog::get(name);
-        if (!logger)
+        if (!logger) {
             logger = spdlog::stdout_color_mt(name);
+        }
         return logger;
     }
 };

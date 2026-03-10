@@ -3,7 +3,7 @@
 
 #include "telemetry-packet.hpp"
 #include <cstring>
-#include <iomanip>
+#include <fmt/core.h>
 #include <iostream>
 #include <netinet/in.h>
 
@@ -14,21 +14,18 @@ constexpr static const char *TELEMETRY_SOCK_PATH = "/tmp/telemetry.sock";
 
 inline void printPacket(const TelemetryPacket &packet)
 {
-    std::cout
-        << "App: " << packet.appId
-        << " at " << packet.timestamp
-        << " battery: " << std::fixed << std::setprecision(2) << packet.batteryV << "V" << std::endl;
+    fmt::print("App {}, at {}, battery {:.2f}\n", packet.appId, packet.timestamp, packet.batteryV);
 }
 
 inline void printAscii(const TelemetryPacket &packet)
 {
     const uint8_t *bytes = reinterpret_cast<const std::uint8_t *>(&packet);
 
-    std::cout << "Telemetry packet ASCII[";
+    fmt::print("Telemetry packet ASCII[\n");
     for (size_t i = 0; i < sizeof(TelemetryPacket); i++) {
         std::cout << static_cast<int>(bytes[i]) << (i == sizeof(TelemetryPacket) - 1 ? "" : ", ");
     }
-    std::cout << "]" << std::endl;
+    fmt::print("]\n");
 }
 
 inline void hton(TelemetryPacket &packet)
