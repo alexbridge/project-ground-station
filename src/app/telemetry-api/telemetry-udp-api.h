@@ -36,6 +36,13 @@ private:
     std::unique_ptr<lib::AfUnixUdpSocket> afUnixSock_{nullptr};
 
     TelemetryUdpApiRun init();
+
+    static std::shared_ptr<spdlog::logger> &log()
+    {
+        static auto instance = Log::get("Connection");
+          // created once
+            return instance;
+    }
 };
 
 } // namespace app

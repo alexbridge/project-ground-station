@@ -4,3 +4,6 @@ add_library(libs STATIC
     )
 
 target_include_directories(libs PUBLIC ${CMAKE_SOURCE_DIR}/src/libs)
+
+# External
+target_include_directories(libs PRIVATE spdlog::spdlog)

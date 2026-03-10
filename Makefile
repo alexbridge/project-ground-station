@@ -19,10 +19,13 @@ CCC_OPTS := -std=c++17 \
 CCC_OPTS_COMPILE := $(CCC_OPTS) -c
 
 install-deps:
-	sudo apt install clang
+	sudo apt install clang clangd clang-format clang-tidy
 	sudo apt install cmake
 	sudo apt install valgrind
-	sudo apt install libpqxx-dev
+	sudo apt install libpq-dev
+
+init-vscode:
+	cmake -S . -B build
 
 IMAGE_BUILDER := clang/clang17:builder
 IMAGE_RUNNER := clang/clang17:runner
