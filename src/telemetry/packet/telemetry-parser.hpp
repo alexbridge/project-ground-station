@@ -1,9 +1,10 @@
 #ifndef CLANG_TELEMETRY_SERVER
 #define CLANG_TELEMETRY_SERVER
 
-#include "telemetry-packet.hpp"
 #include <cstddef>
 #include <unistd.h>
+
+#include "telemetry-packet.hpp"
 
 namespace telemetry
 {

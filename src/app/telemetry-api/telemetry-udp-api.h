@@ -1,11 +1,14 @@
 #ifndef APP_UDP_API_H
 #define APP_UDP_API_H
 
-#include "socket/af-unix-socket.h"
-#include "socket/udp-socket.h"
 #include <cstdint>
 #include <memory>
 #include <string>
+
+#include "logging/logger.h"
+#include "socket/af-unix-socket.h"
+#include "socket/udp-socket.h"
+#include "spdlog/logger.h"
 
 namespace app
 {
@@ -39,9 +42,8 @@ private:
 
     static std::shared_ptr<spdlog::logger> &log()
     {
-        static auto instance = Log::get("Connection");
-          // created once
-            return instance;
+        static auto instance = lib::Logger::get("Connection");
+        return instance;
     }
 };
 

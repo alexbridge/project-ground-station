@@ -1,7 +1,7 @@
 
 
-#include "app/telemetry-api/telemetry-udp-api.h"
-#include "socket/udp-socket.h"
+#include "telemetry-udp-api.h"
+
 #include <cstdint>
 #include <iostream>
 #include <memory>
@@ -12,8 +12,9 @@ namespace app
 {
 TelemetryUdpApi::TelemetryUdpApi(
     uint16_t sockPort,
-    std::string sockPath) : udpSock_{std::make_unique<lib::UdpSocket>(sockPort)},
-                            afUnixSock_{std::make_unique<lib::AfUnixUdpSocket>(std::move(sockPath))} {};
+    std::string sockPath)
+    : udpSock_{std::make_unique<lib::UdpSocket>(sockPort)},
+      afUnixSock_{std::make_unique<lib::AfUnixUdpSocket>(std::move(sockPath))} {};
 
 TelemetryUdpApiRun TelemetryUdpApi::init()
 {

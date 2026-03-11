@@ -1,11 +1,12 @@
-#ifndef APP_TELEMETRY_STORAGE_H
-#define APP_TELEMETRY_STORAGE_H
+#ifndef TELEMETRY_STORAGE_H
+#define TELEMETRY_STORAGE_H
 
-#include "telemetry/packet/telemetry-packet.hpp"
 #include <cstdint>
 #include <fmt/core.h>
 #include <memory>
 #include <vector>
+
+#include "packet/telemetry-packet.hpp"
 
 namespace pqxx
 {

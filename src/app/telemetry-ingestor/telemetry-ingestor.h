@@ -1,11 +1,13 @@
 #ifndef APP_TELEMETRY_INGESTOR_H
 #define APP_TELEMETRY_INGESTOR_H
 
+#include <memory>
+#include <string>
+
 #include "packet/telemetry-packet.hpp"
 #include "socket/af-unix-socket.h"
 #include "spsc-queue/spsc-queue.hpp"
-#include <memory>
-#include <string>
+
 namespace app
 {
 

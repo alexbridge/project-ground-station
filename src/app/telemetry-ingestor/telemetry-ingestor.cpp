@@ -1,7 +1,13 @@
 #include "app/telemetry-ingestor/telemetry-ingestor.h"
+#include "telemetry/packet/telemetry-parser.hpp"
+#include "telemetry/packet/telemetry-helpers.hpp"
 #include "libs/spsc-queue/spsc-queue.hpp"
 #include <memory>
 #include <string>
+#include <iostream>
+#include <thread>
+#include <unistd.h>
+#include <sys/socket.h>
 
 namespace app
 {
@@ -14,109 +20,96 @@ TelemetryIngestor::TelemetryIngestor(std::string sockPath)
 {
 }
 
-TelemetryIngestorStartResult TelemetryIngestor::run()
+TelemetryIngestor::~TelemetryIngestor()
 {
+    stop();
 }
 
 void TelemetryIngestor::stop()
 {
+    running_ = false;
+    if (afUnixSock_ && afUnixSock_->sockFd() > -1) {
+        shutdown(afUnixSock_->sockFd(), SHUT_RDWR);
+    }
 }
 
 void TelemetryIngestor::consume()
 {
     telemetry::TelemetryPacket packet{};
-    TelemetryStorage telemetryStorage{};
 
-    while (running) {
-        // 1. Ensure connection is active
-        if (!telemetryStorage.connected()) {
-            if (!telemetryStorage.connect()) {
-                std::this_thread::sleep_for(std::chrono::seconds(1));
-                continue;
-            }
-        }
-
-        if (spscQueue.pop(packet)) {
-            queueStats.queue_read++;
-            telemetryStorage.add(packet);
+    while (running_) {
+        if (spscQueue_->pop(packet)) {
+            spscQueueStats_.queue_read++;
+            // TODO: Store telemetry or forward it
         } else {
-            // If we've been idle, flush partial batch
-            telemetryStorage.flush();
-            // Release cpu cyles
             std::this_thread::sleep_for(std::chrono::microseconds(50));
         }
     }
-
-    // Flush leftover
-    telemetryStorage.flush();
-};
+}
 
 TelemetryIngestorStartResult TelemetryIngestor::run()
 {
-    auto bind = afUnixSock_->bind();
-    if (bind != lib::AfUnixSocketState::BIND) {
+    auto bindResult = afUnixSock_->bind();
+    if (bindResult != lib::AfUnixSocketState::BIND) {
         return {false, std::string{"Bind error"}};
     }
 
-    int afUnixSock = afUnixSock_->sockFd();
+    int afUnixSockFd = afUnixSock_->sockFd();
 
-    if (listen(afUnixSock, 1) < 0) {
+    if (listen(afUnixSockFd, 1) < 0) {
         return {false, std::string{"Listen error"}};
     }
 
-    std::cout << "Listening on af-unix with sock-fd: " << afUnixSock << std::endl;
+    std::cout << "Listening on af-unix with sock-fd: " << afUnixSockFd << std::endl;
 
-    std::thread consumer(
-        [&spscQueue, &queueStats]() { consume(spscQueue, queueStats); });
+    running_ = true;
+    std::thread consumerThread([this]() { consume(); });
 
-    while (running) {
-        int client_fd = accept(sock_fd, nullptr, nullptr);
+    while (running_) {
+        int client_fd = accept(afUnixSockFd, nullptr, nullptr);
         if (client_fd < 0) {
-            if (!running) {
+            if (!running_) {
                 break;
             }
             perror("accept error");
-            break;
+            continue;
         }
 
         std::cout << "Client connected!" << std::endl;
 
-        while (running) {
-            TelemetryPacket packet{};
-            if (!readPacket(client_fd, packet, sockStats)) {
+        telemetry::TelemetryParseStats sockStats;
+        while (running_) {
+            telemetry::TelemetryPacket packet{};
+            if (!telemetry::readPacket(client_fd, packet, sockStats)) {
                 break;
             }
 
             // Net to host
-            ntoh(packet);
+            telemetry::ntoh(packet);
 
             if constexpr (DEBUG_PACKETS) {
-                printAscii(packet);
-                printPacket(packet);
+                // telemetry::printPacket(packet);
             }
 
-            if (spscQueue.push(packet)) {
-                queueStats.queue_pushed++;
+            if (spscQueue_->push(packet)) {
+                spscQueueStats_.queue_pushed++;
             } else {
-                queueStats.queue_dropped++;
+                spscQueueStats_.queue_dropped++;
             }
         }
 
         std::cout << "Client " << client_fd << " stats: reads " << sockStats.reads
-                  << " stats: partials " << sockStats.partial_reads << std::endl;
+                  << " partials " << sockStats.partial_reads << std::endl;
 
         close(client_fd);
     }
 
-    consumer.join();
+    if (consumerThread.joinable()) {
+        consumerThread.join();
+    }
     std::cout.flush();
 
-    return 0;
+    return {true, "OK"};
 }
 
-void shutdownServer()
-{
-    if (socketFd > -1) {
-        shutdown(socketFd, SHUT_RDWR);
-    }
-}
+} // namespace app

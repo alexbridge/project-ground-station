@@ -3,6 +3,11 @@
     "clangd.arguments": [
         "--header-insertion=iwyu",
         "--completion-style=detailed",
-        "--background-index"
-    ]
+        "--background-index",
+        "--compile-commands-dir=${workspaceFolder}/build",
+        "--clang-tidy",
+        "--all-scopes-completion"
+    ],
+    "editor.suggestSelection": "first",
+    "editor.acceptSuggestionOnEnter": "on"
 }

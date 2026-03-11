@@ -1,11 +1,12 @@
-#ifndef TELEMETRY_PACKET_HELPERS_H
-#define TELEMETRY_PACKET_HELPERS_H
+#ifndef TELEMETRY_HELPERS_H
+#define TELEMETRY_HELPERS_H
 
-#include "telemetry-packet.hpp"
 #include <cstring>
 #include <fmt/core.h>
 #include <iostream>
 #include <netinet/in.h>
+
+#include "telemetry-packet.hpp"
 
 namespace telemetry
 {
@@ -23,7 +24,7 @@ inline void printAscii(const TelemetryPacket &packet)
 
     fmt::print("Telemetry packet ASCII[\n");
     for (size_t i = 0; i < sizeof(TelemetryPacket); i++) {
-        std::cout << static_cast<int>(bytes[i]) << (i == sizeof(TelemetryPacket) - 1 ? "" : ", ");
+        fmt::print("{}{}", static_cast<int>(bytes[i]), i == sizeof(TelemetryPacket) - 1 ? "" : ", ");
     }
     fmt::print("]\n");
 }

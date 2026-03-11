@@ -1,7 +1,6 @@
-#include "app-commons.h"
-#include "app/telemetry-api/telemetry-udp-api.h"
-#include <csignal>
 #include <cstdio>
+
+#include "telemetry-udp-api.h"
 
 static app::TelemetryUdpApi *telemetryUdpApiPtr = nullptr;
 
@@ -14,7 +13,8 @@ void signalHandler(int sig)
 
 int main()
 {
-    struct sigaction sa{};
+    struct sigaction sa {
+    };
     sa.sa_handler = signalHandler;
     sigaction(SIGINT, &sa, nullptr);
 
