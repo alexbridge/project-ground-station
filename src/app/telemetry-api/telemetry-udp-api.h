@@ -1,8 +1,7 @@
-#ifndef APP_UDP_API_H
-#define APP_UDP_API_H
+#ifndef APP_TELEMETRY_UDP_API_H
+#define APP_TELEMETRY_UDP_API_H
 
 #include <cstdint>
-#include <memory>
 #include <string>
 
 #include "logging/logger.h"
@@ -12,7 +11,6 @@
 
 namespace app
 {
-
 struct TelemetryUdpApiRun {
     bool ok;
     std::string msg;
@@ -42,7 +40,7 @@ private:
 
     static std::shared_ptr<spdlog::logger> &log()
     {
-        static auto instance = lib::Logger::get("Connection");
+        static auto instance = lib::Logger::get("TelemetryUdpApi");
         return instance;
     }
 };

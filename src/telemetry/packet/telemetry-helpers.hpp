@@ -3,15 +3,12 @@
 
 #include <cstring>
 #include <fmt/core.h>
-#include <iostream>
 #include <netinet/in.h>
 
 #include "telemetry-packet.hpp"
 
 namespace telemetry
 {
-
-constexpr static const char *TELEMETRY_SOCK_PATH = "/tmp/telemetry.sock";
 
 inline void printPacket(const TelemetryPacket &packet)
 {

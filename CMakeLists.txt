@@ -8,9 +8,25 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# Warnings
+add_compile_options(
+    -Wall -Wextra -Wpedantic -Werror
+    -Wshadow -Wconversion -Wsign-conversion
+    -Wnull-dereference -Wdouble-promotion
+)
+
+# Hardening
+add_compile_options(-fstack-protector-strong)
+add_compile_definitions(_FORTIFY_SOURCE=2)
+
+# Debug: sanitizers
+add_compile_options(
+    -g -fsanitize=address,undefined -fno-omit-frame-pointer
+)
+add_link_options(-fsanitize=address,undefined)
+
 # External for sub-modules
 add_subdirectory(src/libs)
 add_subdirectory(src/telemetry)
-add_subdirectory(src/app/telemetry-api)
-add_subdirectory(src/app/telemetry-ingestor)
+add_subdirectory(src/app)
 

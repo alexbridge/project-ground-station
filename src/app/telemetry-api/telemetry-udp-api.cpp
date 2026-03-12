@@ -22,22 +22,22 @@ TelemetryUdpApiRun TelemetryUdpApi::init()
     if (udpSockBindResult != lib::UdpSocketState::BIND) {
         return {
             false,
-            std::string("UDP bind error: ") + lib::toString(udpSockBindResult)};
+            fmt::format("UDP bind error: {}", lib::toString(udpSockBindResult))};
     }
-
-    printf("UDP listen on port: %d\n", udpSock_->port());
-    printf("UDP RCV actual buffer: %d bytes\n", udpSock_->actualBufSize().value());
 
     auto afUnixConnectResult = afUnixSock_->connect();
     if (afUnixConnectResult != lib::AfUnixSocketState::CONNECT) {
         return {
             false,
-            std::string("AF-UNIX connect error: ") + lib::toString(afUnixConnectResult)};
+            fmt::format("AF-UNIX connect error: {}", lib::toString(afUnixConnectResult))};
     }
 
     return {
         true,
-        std::string("OK")};
+        fmt::format(
+            "Telemetry UDP: port {}, RCV actual buffer {}bytes",
+            udpSock_->port(),
+            udpSock_->actualBufSize().value())};
 }
 
 TelemetryUdpApiRun TelemetryUdpApi::run()
@@ -72,7 +72,7 @@ TelemetryUdpApiRun TelemetryUdpApi::run()
         sent += nat;
 
         if (sent % 1024 == 0) {
-            std::cout << "." << std::flush;
+            fmt::print(".");
         }
     }
 
@@ -80,7 +80,7 @@ TelemetryUdpApiRun TelemetryUdpApi::run()
 
     return {
         true,
-        std::string("OK")};
+        fmt::format("OK")};
 }
 
 void TelemetryUdpApi::stop()

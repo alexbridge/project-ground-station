@@ -9,19 +9,19 @@
 namespace lib
 {
 
-#define UDP_SOCKET_STATE(X) \
-    X(INITIAL)              \
-    X(SOCK_PRECONDITIONS)   \
-    X(NO_SOCK)              \
-    X(NO_SOCK_CONNECT)      \
-    X(NO_SOCK_BIND)         \
-    X(READY)                \
-    X(CONNECT)              \
+#define AF_SOCKET_STATE(X) \
+    X(INITIAL)             \
+    X(SOCK_PRECONDITIONS)  \
+    X(NO_SOCK)             \
+    X(NO_SOCK_CONNECT)     \
+    X(NO_SOCK_BIND)        \
+    X(READY)               \
+    X(CONNECT)             \
     X(BIND)
 
 enum class AfUnixSocketState {
 #define GENERATE_ENUM_VALUE(v) v,
-    UDP_SOCKET_STATE(GENERATE_ENUM_VALUE)
+    AF_SOCKET_STATE(GENERATE_ENUM_VALUE)
 #undef GENERATE_ENUM_VALUE
 };
 
@@ -31,7 +31,7 @@ constexpr const char *toString(AfUnixSocketState s)
 #define GENERATE_CASE(v)       \
     case AfUnixSocketState::v: \
         return #v;
-        UDP_SOCKET_STATE(GENERATE_CASE)
+        AF_SOCKET_STATE(GENERATE_CASE)
 #undef GENERATE_CASE
         default:
             return "UNKNOWN";

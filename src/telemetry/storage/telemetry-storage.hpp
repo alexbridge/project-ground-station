@@ -2,7 +2,6 @@
 #define TELEMETRY_STORAGE_H
 
 #include <cstdint>
-#include <fmt/core.h>
 #include <memory>
 #include <vector>
 

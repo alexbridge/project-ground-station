@@ -1,11 +1,19 @@
+#include <csignal>
 #include <cstdio>
+#include <memory>
 
-#include "telemetry-udp-api.h"
+#include "app-commons.h"
+#include "logging/logger.h"
+#include "spdlog/logger.h"
+#include "telemetry-api/telemetry-udp-api.h"
 
 static app::TelemetryUdpApi *telemetryUdpApiPtr = nullptr;
+static std::shared_ptr<spdlog::logger> mainLogger = nullptr;
 
 void signalHandler(int sig)
 {
+    mainLogger->info("SIG {} stop", sig);
+
     if (telemetryUdpApiPtr) {
         telemetryUdpApiPtr->stop();
     }
@@ -13,6 +21,8 @@ void signalHandler(int sig)
 
 int main()
 {
+    mainLogger = lib::Logger::get("TelemetryUdpApiMain");
+
     struct sigaction sa {
     };
     sa.sa_handler = signalHandler;
@@ -26,9 +36,11 @@ int main()
 
     auto run = telemetryUdpApi.run();
     if (!run.ok) {
-        printf("Error running server: %s", run.msg.c_str());
+        mainLogger->error("Error running server: {}", run.msg);
         return 1;
-    };
+    } else {
+        mainLogger->info(run.msg);
+    }
 
     return 0;
 }
