@@ -2,9 +2,13 @@
 #ifndef LIB_SOCKET_AF_UNIX_H
 #define LIB_SOCKET_AF_UNIX_H
 
+#include <memory>
 #include <optional>
 #include <string>
 #include <sys/un.h>
+
+#include "logging/logger.h"
+#include "spdlog/logger.h"
 
 namespace lib
 {
@@ -72,6 +76,12 @@ private:
     void close();
 
     void setActualBufSize(int option);
+
+    static std::shared_ptr<spdlog::logger> &log()
+    {
+        static auto instance = lib::Logger::get("AfUnix");
+        return instance;
+    }
 };
 
 } // namespace lib

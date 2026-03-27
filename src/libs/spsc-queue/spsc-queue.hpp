@@ -8,11 +8,7 @@
 namespace lib
 {
 
-#ifdef __cpp_lib_hardware_interference_size
-static constexpr size_t cacheLine_ = std::hardware_destructive_interference_size;
-#else
 static constexpr size_t cacheLine_ = 64;
-#endif
 
 struct SPSCQueueStats {
     size_t queue_pushed{0};

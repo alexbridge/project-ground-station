@@ -1,17 +1,18 @@
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <unistd.h>
+#include <bits/this_thread_sleep.h>
+#include <chrono>
 #include <cstring>
-#include <sstream>
 #include <iostream>
 #include <random>
-#include <thread>
-#include "../src/telemetry-server/hpp/telemetry.hpp"
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <unistd.h>
 
-#include <chrono>
+#include "app-commons.h"
+#include "packet/telemetry-helpers.hpp"
+#include "packet/telemetry-packet.hpp"
+#include "socket/af-unix-socket.h"
 
-TelemetryPacket generateTelemetry(uint16_t rangeStart, uint16_t rangeEnd)
+telemetry::TelemetryPacket generateTelemetry(uint16_t rangeStart, uint16_t rangeEnd)
 {
     static std::default_random_engine eng{std::random_device{}()};
 
@@ -26,7 +27,7 @@ TelemetryPacket generateTelemetry(uint16_t rangeStart, uint16_t rangeEnd)
     // float battery voltage
     static std::uniform_real_distribution<float> voltDist(3.3f, 4.2f);
 
-    return TelemetryPacket{
+    return telemetry::TelemetryPacket{
         appIdDist(eng),
         currentTimestamp,
         voltDist(eng)};
@@ -34,8 +35,7 @@ TelemetryPacket generateTelemetry(uint16_t rangeStart, uint16_t rangeEnd)
 
 int main(int argc, char const *argv[])
 {
-    if (argc != 4)
-    {
+    if (argc != 4) {
         std::cerr << "Usage: " << argv[0] << " <num_events> <app_id_start> <app_id_end>\n";
         return 1;
     }
@@ -44,71 +44,60 @@ int main(int argc, char const *argv[])
     uint16_t rangeStart = 0;
     uint16_t rangeEnd = 0;
 
-    try
-    {
+    try {
         numEvents = std::stoi(argv[1]);
         rangeStart = static_cast<uint16_t>(std::max(std::stoi(argv[2]), 0));
         rangeEnd = static_cast<uint16_t>(std::max(std::stoi(argv[3]), 0));
-    }
-    catch (const std::exception &e)
-    {
+    } catch (const std::exception &e) {
         std::cerr << "Invalid arguments.\n";
         return 1;
     }
 
-    if (numEvents < 1)
-    {
+    if (numEvents < 1) {
         std::cerr << "Number of events must be positive\n";
         return 1;
     }
 
-    int client_fd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (client_fd < 0)
-    {
-        perror("socket create error");
+    auto mainLogger = lib::Logger::get("AfUnixDgramProducer");
+
+    lib::AfUnixUdpSocket afUnixUdpSock{app::TELEMETRY_SOCK_PATH};
+
+    auto res = afUnixUdpSock.bind();
+    if (res != lib::AfUnixSocketState::BIND) {
+        mainLogger->error("Bind error");
         return 1;
     }
 
-    sockaddr_in servaddr{};
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(5005);
-    servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    int udpSockFd = afUnixUdpSock.sockFd();
 
-    std::cout << "Target: 127.0.0.1:5005 (UDP)" << std::endl;
+    mainLogger->info("AF-sock connected: {}", udpSockFd);
 
-    for (int i = 0; i < numEvents; ++i)
-    {
-        TelemetryPacket packet = generateTelemetry(rangeStart, rangeEnd);
+    for (int i = 0; i < numEvents; ++i) {
+        mainLogger->info("Sending {}", i);
 
-        printPacket(packet);
+        telemetry::TelemetryPacket packet = generateTelemetry(rangeStart, rangeEnd);
+
+        telemetry::printPacket(packet);
 
         // Host to network
         hton(packet);
 
-        ssize_t sent = sendto(
-            client_fd,
+        ssize_t sent = send(
+            udpSockFd,
             reinterpret_cast<const char *>(&packet),
             sizeof(packet),
-            0,
-            (const struct sockaddr *)&servaddr,
-            sizeof(servaddr));
-        if (sent <= 0)
-        {
-            perror("sendto error");
+            0);
+        if (sent <= 0) {
+            perror("error");
             break;
         }
 
-        std::cout << ".";
+        mainLogger->info("sent");
 
-        if (i % 1024 == 0)
-        {
-            std::cout << " 1024\n";
+        if (i % 100 == 0) {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
     }
 
-    std::cout << " sent: " << numEvents << std::endl;
-
-    close(client_fd);
     return 0;
 }

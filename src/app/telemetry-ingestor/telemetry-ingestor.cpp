@@ -55,54 +55,30 @@ TelemetryIngestorStartResult TelemetryIngestor::run()
 
     int afUnixSockFd = afUnixSock_->sockFd();
 
-    if (listen(afUnixSockFd, 1) < 0) {
-        return {false, std::string{"Listen error"}};
-    }
-
-    log()->info("Listening on af-unix: sock-fd {}", afUnixSockFd);
+    log()->info("AF-unix sock-fd: {}", afUnixSockFd);
 
     running_ = true;
     std::thread consumerThread([this]() { consume(); });
+    telemetry::TelemetryParseStats sockStats;
 
     while (running_) {
-        int clientFd = accept(afUnixSockFd, nullptr, nullptr);
-        if (clientFd < 0) {
-            if (!running_) {
-                break;
-            }
-            perror("accept error");
-            continue;
+        telemetry::TelemetryPacket packet{};
+        if (!telemetry::readPacket(afUnixSockFd, packet, sockStats)) {
+            break;
         }
 
-        log()->info("Client connected: {}. Run thread", clientFd);
+        // Net to host
+        telemetry::ntoh(packet);
 
-        telemetry::TelemetryParseStats sockStats;
-        while (running_) {
-            telemetry::TelemetryPacket packet{};
-            if (!telemetry::readPacket(clientFd, packet, sockStats)) {
-                break;
-            }
-
-            // Net to host
-            telemetry::ntoh(packet);
-
-            if constexpr (DEBUG_PACKETS) {
-                telemetry::printPacket(packet);
-            }
-
-            if (spscQueue_->push(packet)) {
-                spscQueueStats_.queue_pushed++;
-            } else {
-                spscQueueStats_.queue_dropped++;
-            }
+        if constexpr (DEBUG_PACKETS) {
+            telemetry::printPacket(packet);
         }
 
-        log()->info(
-            "Client {} stats: reads {}, partials {} ",
-            sockStats.reads,
-            sockStats.partial_reads);
-
-        close(clientFd);
+        if (spscQueue_->push(packet)) {
+            spscQueueStats_.queue_pushed++;
+        } else {
+            spscQueueStats_.queue_dropped++;
+        }
     }
 
     if (consumerThread.joinable()) {

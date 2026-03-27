@@ -29,4 +29,5 @@ add_link_options(-fsanitize=address,undefined)
 add_subdirectory(src/libs)
 add_subdirectory(src/telemetry)
 add_subdirectory(src/app)
+add_subdirectory(test)
 

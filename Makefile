@@ -15,11 +15,11 @@ build:
 clean:
 	rm -rf $(BUILD_DIR)
 
-telemetry-api: build
-	./$(BUILD_DIR)/src/app/telemetry_api
+telemetry-api:
+	@./$(BUILD_DIR)/src/app/telemetry_api
 
 telemetry-ingestor: build
-	./$(BUILD_DIR)/src/app/telemetry_ingestor
+	@./$(BUILD_DIR)/src/app/telemetry_ingestor
 
 clangd-check:
 	@find . -type f \( -name '*.h' -o -name '*.cpp' -o -name '*.hpp' \) | while read f; do \

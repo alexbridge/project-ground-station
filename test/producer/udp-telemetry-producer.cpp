@@ -1,17 +1,19 @@
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <unistd.h>
-#include <cstring>
-#include <sstream>
-#include <iostream>
-#include <vector>
-#include <random>
-#include <bits/this_thread_sleep.h>
-#include "../src/telemetry-server/hpp/telemetry.hpp"
-
+#include <arpa/inet.h>
 #include <chrono>
+#include <cstring>
+#include <iostream>
+#include <netinet/in.h>
+#include <random>
+#include <sys/socket.h>
+#include <thread>
+#include <unistd.h>
 
-TelemetryPacket generateTelemetry(uint16_t rangeStart, uint16_t rangeEnd)
+#include "logging/logger.h"
+#include "packet/telemetry-helpers.hpp"
+#include "packet/telemetry-packet.hpp"
+#include "socket/udp-socket.h"
+
+telemetry::TelemetryPacket generateTelemetry(uint16_t rangeStart, uint16_t rangeEnd)
 {
     static std::default_random_engine eng{std::random_device{}()};
 
@@ -26,7 +28,7 @@ TelemetryPacket generateTelemetry(uint16_t rangeStart, uint16_t rangeEnd)
     // float battery voltage
     static std::uniform_real_distribution<float> voltDist(3.3f, 4.2f);
 
-    return TelemetryPacket{
+    return telemetry::TelemetryPacket{
         appIdDist(eng),
         currentTimestamp,
         voltDist(eng)};
@@ -34,8 +36,7 @@ TelemetryPacket generateTelemetry(uint16_t rangeStart, uint16_t rangeEnd)
 
 int main(int argc, char const *argv[])
 {
-    if (argc != 4)
-    {
+    if (argc != 4) {
         std::cerr << "Usage: " << argv[0] << " <num_events> <app_id_start> <app_id_end>\n";
         return 1;
     }
@@ -44,74 +45,64 @@ int main(int argc, char const *argv[])
     uint16_t rangeStart = 0;
     uint16_t rangeEnd = 0;
 
-    try
-    {
+    try {
         numEvents = std::stoi(argv[1]);
         rangeStart = static_cast<uint16_t>(std::max(std::stoi(argv[2]), 0));
         rangeEnd = static_cast<uint16_t>(std::max(std::stoi(argv[3]), 0));
-    }
-    catch (const std::exception &e)
-    {
+    } catch (const std::exception &e) {
         std::cerr << "Invalid arguments.\n";
         return 1;
     }
 
-    if (numEvents < 1)
-    {
+    if (numEvents < 1) {
         std::cerr << "Number of events must be positive\n";
         return 1;
     }
 
-    int client_fd = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (client_fd < 0)
-    {
-        perror("socket start error");
+    auto mainLogger = lib::Logger::get("UdpProducer");
+
+    lib::UdpSocket udpSock{5005};
+
+    auto res = udpSock.connect();
+    if (res != lib::UdpSocketState::CONNECT) {
+        mainLogger->error("UDP connect error");
         return 1;
     }
 
-    sockaddr_un addr{};
-    addr.sun_family = AF_UNIX;
-    std::strncpy(addr.sun_path, TELEMETRY_SOCK_PATH, sizeof(addr.sun_path) - 1);
+    int sockFd = udpSock.sockFd();
 
-    if (connect(client_fd, (sockaddr *)&addr, sizeof(addr)) < 0)
-    {
-        perror("connect");
-        close(client_fd);
-        return 1;
-    }
+    mainLogger->info("Target: 127.0.0.1:5005 (UDP)");
 
-    std::cout << "Connected to server!" << std::endl;
+    for (int i = 0; i < numEvents; ++i) {
+        telemetry::TelemetryPacket packet = generateTelemetry(rangeStart, rangeEnd);
 
-    for (int i = 0; i < numEvents; ++i)
-    {
-        std::cout << "Sending: " << i << " ... ";
-
-        TelemetryPacket packet = generateTelemetry(rangeStart, rangeEnd);
-
-        printPacket(packet);
+        telemetry::printPacket(packet);
 
         // Host to network
         hton(packet);
 
         ssize_t sent = send(
-            client_fd,
+            sockFd,
             reinterpret_cast<const char *>(&packet),
             sizeof(packet),
-            0);
-        if (sent <= 0)
-        {
-            perror("error");
+            0,
+            (const struct sockaddr *)&servaddr,
+            sizeof(servaddr));
+
+        if (sent <= 0) {
+            perror("sendto error");
             break;
         }
 
-        std::cout << " sent" << std::endl;
+        mainLogger->info(".");
 
-        if (i % 100 == 0)
-        {
+        if (i % 1024 == 0) {
+            mainLogger->info("1024\n");
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
     }
 
-    close(client_fd);
+    mainLogger->info("sent: {}", numEvents);
+
     return 0;
 }
