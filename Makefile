@@ -22,7 +22,7 @@ telemetry-af-unix-ingestor:
 	@./$(BUILD_DIR)/src/app/telemetry_ingestor
 
 telemetry-af-unix-producer:
-	@./$(BUILD_DIR)/test/af_unix_dgram_producer 100 0 10000
+	@./$(BUILD_DIR)/test/af_unix_dgram_producer 1 0 64000
 
 clangd-check:
 	@find . -type f \( -name '*.h' -o -name '*.cpp' -o -name '*.hpp' \) | while read f; do \
