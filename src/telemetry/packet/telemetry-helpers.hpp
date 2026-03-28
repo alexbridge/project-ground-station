@@ -12,7 +12,7 @@ namespace telemetry
 
 inline void printPacket(const TelemetryPacket &packet)
 {
-    fmt::print("App {}, at {}, battery {:.2f}\n", packet.appId, packet.timestamp, packet.batteryV);
+    fmt::print("App {}, at {}, battery {:.2f}\n", packet.appId, packet.timestamp, packet.batteryVoltage());
 }
 
 inline void printAscii(const TelemetryPacket &packet)

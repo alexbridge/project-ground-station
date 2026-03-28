@@ -7,6 +7,8 @@
 #include <pqxx/pqxx>
 #include <string>
 
+#include "packet/telemetry-helpers.hpp"
+
 namespace telemetry
 {
 
@@ -67,9 +69,7 @@ void TelemetryStorage::flush()
             char time_str[20];
             std::strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", &tm_buf);
 
-            float voltage;
-            std::memcpy(&voltage, &packet.batteryV, sizeof(voltage));
-            writer << std::make_tuple(time_str, packet.appId, voltage);
+            writer << std::make_tuple(time_str, packet.appId, packet.batteryVoltage());
         }
 
         writer.complete();
