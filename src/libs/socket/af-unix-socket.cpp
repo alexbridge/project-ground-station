@@ -59,7 +59,7 @@ AfUnixSocketState AfUnixUdpSocket::initializeSock()
 
     sockFd_ = socket(AF_UNIX, SOCK_DGRAM, 0);
 
-    log()->info("Af-unit SOCK_DGRAM sock-fd {}", sockFd_);
+    log()->info("Af-unix SOCK_DGRAM sock-fd {}", sockFd_);
 
     if (sockFd_ < 0) {
         return AfUnixSocketState::NO_SOCK;
@@ -68,7 +68,7 @@ AfUnixSocketState AfUnixUdpSocket::initializeSock()
     sockAddr_.sun_family = AF_UNIX;
     std::strncpy(sockAddr_.sun_path, sockPath_.c_str(), sizeof(sockAddr_.sun_path) - 1);
 
-    log()->info("Af-unit SOCK_DGRAM sock-fd {} is READY", sockFd_);
+    log()->info("Af-unix SOCK_DGRAM sock-fd {} is READY", sockFd_);
     return AfUnixSocketState::READY;
 }
 

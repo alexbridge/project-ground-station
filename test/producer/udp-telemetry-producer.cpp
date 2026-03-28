@@ -8,6 +8,7 @@
 #include <thread>
 #include <unistd.h>
 
+#include "fmt/format.h"
 #include "logging/logger.h"
 #include "packet/telemetry-helpers.hpp"
 #include "packet/telemetry-packet.hpp"
@@ -36,8 +37,10 @@ telemetry::TelemetryPacket generateTelemetry(uint16_t rangeStart, uint16_t range
 
 int main(int argc, char const *argv[])
 {
+    auto mainLogger = lib::Logger::get("UdpProducer");
     if (argc != 4) {
-        std::cerr << "Usage: " << argv[0] << " <num_events> <app_id_start> <app_id_end>\n";
+        mainLogger->warn("Usage: {} <num_events> <app_id_start> <app_id_end>", argv[0]);
+
         return 1;
     }
 
@@ -50,28 +53,26 @@ int main(int argc, char const *argv[])
         rangeStart = static_cast<uint16_t>(std::max(std::stoi(argv[2]), 0));
         rangeEnd = static_cast<uint16_t>(std::max(std::stoi(argv[3]), 0));
     } catch (const std::exception &e) {
-        std::cerr << "Invalid arguments.\n";
+        mainLogger->warn("Invalid arguments: {} ", fmt::join(argv + 1, argv + argc, ", "));
         return 1;
     }
 
     if (numEvents < 1) {
-        std::cerr << "Number of events must be positive\n";
+        mainLogger->warn("Number of events must be positive");
         return 1;
     }
-
-    auto mainLogger = lib::Logger::get("UdpProducer");
 
     lib::UdpSocket udpSock{5005};
 
     auto res = udpSock.connect();
     if (res != lib::UdpSocketState::CONNECT) {
-        mainLogger->error("UDP connect error");
+        mainLogger->error("UDP sock connect error");
         return 1;
     }
 
     int sockFd = udpSock.sockFd();
 
-    mainLogger->info("Target: 127.0.0.1:5005 (UDP)");
+    mainLogger->info("Target: 127.0.0.1:5005 (UDP), actual buffer {}", udpSock.actualBufSize().value());
 
     for (int i = 0; i < numEvents; ++i) {
         telemetry::TelemetryPacket packet = generateTelemetry(rangeStart, rangeEnd);
@@ -85,9 +86,7 @@ int main(int argc, char const *argv[])
             sockFd,
             reinterpret_cast<const char *>(&packet),
             sizeof(packet),
-            0,
-            (const struct sockaddr *)&servaddr,
-            sizeof(servaddr));
+            0);
 
         if (sent <= 0) {
             perror("sendto error");
@@ -97,7 +96,7 @@ int main(int argc, char const *argv[])
         mainLogger->info(".");
 
         if (i % 1024 == 0) {
-            mainLogger->info("1024\n");
+            mainLogger->info(".. sent 1024");
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
     }

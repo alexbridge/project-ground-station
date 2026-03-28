@@ -35,8 +35,9 @@ telemetry::TelemetryPacket generateTelemetry(uint16_t rangeStart, uint16_t range
 
 int main(int argc, char const *argv[])
 {
+    auto mainLogger = lib::Logger::get("AfUnixDgramProducer");
     if (argc != 4) {
-        std::cerr << "Usage: " << argv[0] << " <num_events> <app_id_start> <app_id_end>\n";
+        mainLogger->warn("Usage: {} <num_events> <app_id_start> <app_id_end>", argv[0]);
         return 1;
     }
 
@@ -49,28 +50,26 @@ int main(int argc, char const *argv[])
         rangeStart = static_cast<uint16_t>(std::max(std::stoi(argv[2]), 0));
         rangeEnd = static_cast<uint16_t>(std::max(std::stoi(argv[3]), 0));
     } catch (const std::exception &e) {
-        std::cerr << "Invalid arguments.\n";
+        mainLogger->error("Invalid arguments: {}", fmt::join(argv + 1, argv + argc, ", "));
         return 1;
     }
 
     if (numEvents < 1) {
-        std::cerr << "Number of events must be positive\n";
+        mainLogger->error("Number of events must be positive, but was {}", numEvents);
         return 1;
     }
 
-    auto mainLogger = lib::Logger::get("AfUnixDgramProducer");
-
     lib::AfUnixUdpSocket afUnixUdpSock{app::TELEMETRY_SOCK_PATH};
 
-    auto res = afUnixUdpSock.bind();
-    if (res != lib::AfUnixSocketState::BIND) {
-        mainLogger->error("Bind error");
+    auto res = afUnixUdpSock.connect();
+    if (res != lib::AfUnixSocketState::CONNECT) {
+        mainLogger->error("Connect to af-uxix sock not possible");
         return 1;
     }
 
     int udpSockFd = afUnixUdpSock.sockFd();
 
-    mainLogger->info("AF-sock connected: {}", udpSockFd);
+    mainLogger->info("AF-sock connected: {}, actual buffer size {}", udpSockFd, afUnixUdpSock.actualBufSize().value());
 
     for (int i = 0; i < numEvents; ++i) {
         mainLogger->info("Sending {}", i);

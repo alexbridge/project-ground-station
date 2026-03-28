@@ -2,7 +2,9 @@
 #ifndef LIB_SOCKET_UDP_H
 #define LIB_SOCKET_UDP_H
 
+#include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <netinet/in.h>
 #include <optional>
 
@@ -52,6 +54,8 @@ public:
     UdpSocketState bind();
 
     int sockFd() const;
+
+    const sockaddr_in &getSockAddr() const;
 
     uint16_t port() const;
 

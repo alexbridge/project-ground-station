@@ -9,7 +9,7 @@
 namespace app
 {
 
-constexpr bool DEBUG_PACKETS = false;
+constexpr bool DEBUG_PACKETS = true;
 
 TelemetryIngestor::TelemetryIngestor(std::string sockPath)
     : afUnixSock_{std::make_unique<lib::AfUnixUdpSocket>(std::move(sockPath))},

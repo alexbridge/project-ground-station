@@ -15,11 +15,14 @@ build:
 clean:
 	rm -rf $(BUILD_DIR)
 
-telemetry-api:
+telemetry-udp-api:
 	@./$(BUILD_DIR)/src/app/telemetry_api
 
-telemetry-ingestor: build
+telemetry-af-unix-ingestor:
 	@./$(BUILD_DIR)/src/app/telemetry_ingestor
+
+telemetry-af-unix-producer:
+	@./$(BUILD_DIR)/test/af_unix_dgram_producer 100 0 10000
 
 clangd-check:
 	@find . -type f \( -name '*.h' -o -name '*.cpp' -o -name '*.hpp' \) | while read f; do \

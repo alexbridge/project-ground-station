@@ -4,6 +4,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include "udp-socket.h"
+
 namespace lib
 {
 
@@ -109,4 +111,8 @@ void UdpSocket::close()
     state_ = UdpSocketState::INITIAL;
 }
 
+const sockaddr_in &UdpSocket::getSockAddr() const
+{
+    return sockAddrIn_;
+}
 } // namespace lib
