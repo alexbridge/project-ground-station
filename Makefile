@@ -42,3 +42,8 @@ clangd-check:
 			echo "OK: $$f"; \
 		fi \
 	done
+
+docker-run-db:
+	cd docker && docker compose -f docker-compose-db.yml up -d
+docker-stop-db:
+	cd docker && docker compose -f docker-compose-db.yml down -v

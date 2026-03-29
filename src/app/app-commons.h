@@ -3,15 +3,14 @@
 
 #include <cstddef>
 
-namespace app
-{
+namespace app {
 
-constexpr static const char *TELEMETRY_SOCK_PATH = "/tmp/telemetry.sock";
+constexpr static const char *TELEMETRY_SOCK_PATH = "/opt/telemetry.sock";
 
 struct ServerSockStats {
     size_t reads{0};
     size_t partial_reads{0};
 };
-} // namespace app
+}  // namespace app
 
 #endif

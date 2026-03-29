@@ -1,11 +1,14 @@
 #include <csignal>
 #include <cstdio>
+#include <fstream>
 #include <memory>
 
 #include "app-commons.h"
 #include "logging/logger.h"
 #include "spdlog/logger.h"
 #include "telemetry-ingestor/telemetry-ingestor.h"
+
+constexpr const char *APP_STATUS_PATH = "/opt/app/status";
 
 static app::TelemetryIngestor         *telemetryIngestorPtr = nullptr;
 static std::shared_ptr<spdlog::logger> mainLogger           = nullptr;
@@ -18,8 +21,12 @@ void signalHandler(int sig) {
     }
 }
 
+void healthStatus(std::string status) { std::ofstream(APP_STATUS_PATH) << status; }
+
 int main() {
     mainLogger = lib::Logger::get("TelemetryIngestorApiMain");
+
+    healthStatus("RUNNING");
 
     struct sigaction sa {};
     sa.sa_handler = signalHandler;

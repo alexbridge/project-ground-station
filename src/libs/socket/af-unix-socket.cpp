@@ -1,14 +1,13 @@
 #include "af-unix-socket.h"
 
-#include <cstring>
 #include <sys/socket.h>
 #include <unistd.h>
 
-namespace lib
-{
+#include <cstring>
 
-AfUnixSocketState AfUnixUdpSocket::connect()
-{
+namespace lib {
+
+AfUnixSocketState AfUnixUdpSocket::connect() {
     // Prev applicable state
     close();
 
@@ -29,8 +28,7 @@ AfUnixSocketState AfUnixUdpSocket::connect()
     return state_.value();
 }
 
-AfUnixSocketState AfUnixUdpSocket::bind()
-{
+AfUnixSocketState AfUnixUdpSocket::bind() {
     // Prev applicable state
     close();
 
@@ -51,8 +49,7 @@ AfUnixSocketState AfUnixUdpSocket::bind()
     return state_.value();
 }
 
-AfUnixSocketState AfUnixUdpSocket::initializeSock()
-{
+AfUnixSocketState AfUnixUdpSocket::initializeSock() {
     if (sockPath_.size() > sizeof(sockAddr_.sun_path) - 1) {
         return AfUnixSocketState::SOCK_PRECONDITIONS;
     }
@@ -72,39 +69,26 @@ AfUnixSocketState AfUnixUdpSocket::initializeSock()
     return AfUnixSocketState::READY;
 }
 
-void AfUnixUdpSocket::setActualBufSize(int option)
-{
-    int actual{};
+void AfUnixUdpSocket::setActualBufSize(int option) {
+    int       actual{};
     socklen_t len = sizeof(actual);
     getsockopt(sockFd_, SOL_SOCKET, option, &actual, &(len));
     actualBufSize_ = actual;
 }
 
-int AfUnixUdpSocket::sockFd() const
-{
-    return sockFd_;
-}
+int AfUnixUdpSocket::sockFd() const { return sockFd_; }
 
-std::optional<int> AfUnixUdpSocket::actualBufSize() const
-{
-    return actualBufSize_;
-}
+std::optional<int> AfUnixUdpSocket::actualBufSize() const { return actualBufSize_; }
 
-AfUnixUdpSocket::~AfUnixUdpSocket()
-{
-    close();
-}
+AfUnixUdpSocket::~AfUnixUdpSocket() { close(); }
 
-void AfUnixUdpSocket::close()
-{
+void AfUnixUdpSocket::close() {
     if (sockFd_ >= 0) {
         ::close(sockFd_);
         sockFd_ = -1;
     }
-    if (state_ == AfUnixSocketState::BIND) {
-        unlink(sockPath_.c_str());
-    }
+    unlink(sockPath_.c_str());
     state_ = AfUnixSocketState::INITIAL;
 }
 
-} // namespace lib
+}  // namespace lib

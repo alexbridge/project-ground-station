@@ -8,10 +8,11 @@
 #include <string>
 
 #include "packet/telemetry-helpers.hpp"
+#include "utils/env-utils.h"
 
 namespace telemetry {
 
-constexpr const char *TM_STORAGE_HOST  = "localhost";
+const std::string     TM_STORAGE_HOST  = lib::getEnv("TELEMETRY_DB_HOST", "localhost");
 constexpr const char *TM_STORAGE_PORT  = "5432";
 constexpr const char *TM_STORAGE_DB    = "GROUND_STATION";
 constexpr const char *TM_STORAGE_TABLE = "TELEMETRY";
@@ -95,9 +96,7 @@ void TelemetryStorage::add(const TelemetryPacket &packet) {
     }
 }
 
-TelemetryStorage::TelemetryStorage(uint16_t batchSize) : batchSize_(batchSize) {
-    batch_.reserve(batchSize);
-}
+TelemetryStorage::TelemetryStorage(uint16_t batchSize) : batchSize_(batchSize) { batch_.reserve(batchSize); }
 
 TelemetryStorage::~TelemetryStorage() {
     // any remaining
