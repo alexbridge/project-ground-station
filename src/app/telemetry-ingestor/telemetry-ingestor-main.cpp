@@ -7,11 +7,10 @@
 #include "spdlog/logger.h"
 #include "telemetry-ingestor/telemetry-ingestor.h"
 
-static app::TelemetryIngestor *telemetryIngestorPtr = nullptr;
-static std::shared_ptr<spdlog::logger> mainLogger = nullptr;
+static app::TelemetryIngestor         *telemetryIngestorPtr = nullptr;
+static std::shared_ptr<spdlog::logger> mainLogger           = nullptr;
 
-void signalHandler(int sig)
-{
+void signalHandler(int sig) {
     mainLogger->info("SIG {} stop", sig);
 
     if (telemetryIngestorPtr) {
@@ -19,24 +18,22 @@ void signalHandler(int sig)
     }
 }
 
-int main()
-{
+int main() {
     mainLogger = lib::Logger::get("TelemetryIngestorApiMain");
 
-    struct sigaction sa {
-    };
+    struct sigaction sa {};
     sa.sa_handler = signalHandler;
     sigaction(SIGINT, &sa, nullptr);
 
-    mainLogger->info("Preparing ..");
+    mainLogger->info("Preparing ingestor ..");
 
     app::TelemetryIngestor telemetryIngestor{app::TELEMETRY_SOCK_PATH};
 
-    mainLogger->info("Prepared");
+    mainLogger->info("Ingestor prepared");
 
     telemetryIngestorPtr = &telemetryIngestor;
 
-    mainLogger->info("Starting ...");
+    mainLogger->info("Starting ingestor ...");
     auto run = telemetryIngestor.run();
     if (!run.ok) {
         mainLogger->error("Error running server: {}", run.msg);

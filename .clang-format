@@ -12,3 +12,4 @@ ContinuationIndentWidth: 4
 PointerAlignment: Left
 BinPackArguments: false
 AllowAllArgumentsOnNextLine: false
+BreakBeforeBinaryOperators: All

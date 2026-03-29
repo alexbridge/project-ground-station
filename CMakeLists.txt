@@ -20,10 +20,10 @@ add_compile_options(-fstack-protector-strong)
 add_compile_definitions(_FORTIFY_SOURCE=2)
 
 # Debug: sanitizers
-add_compile_options(
-    -g -fsanitize=address,undefined -fno-omit-frame-pointer
-)
-add_link_options(-fsanitize=address,undefined)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_compile_options(-g -fsanitize=address,undefined -fno-omit-frame-pointer)
+    add_link_options(-fsanitize=address,undefined)
+endif()
 
 # External for sub-modules
 add_subdirectory(src/libs)

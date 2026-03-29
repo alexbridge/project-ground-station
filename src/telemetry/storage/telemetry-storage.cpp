@@ -19,16 +19,25 @@ constexpr const char *TM_STORAGE_USER  = "ground";
 constexpr const char *TM_STORAGE_PASS  = "ground";
 
 TelemetryStorageState telemetry::TelemetryStorage::connect() {
-    std::string connStr = std::string("host=") + TM_STORAGE_HOST + " port=" + TM_STORAGE_PORT +
-                          " dbname=" + TM_STORAGE_DB + " user=" + TM_STORAGE_USER +
-                          " password=" + TM_STORAGE_PASS;
+    if (state_ == TelemetryStorageState::CONNECTED) {
+        return state_;
+    }
+
+    std::string connStr = fmt::format(
+        "host={} port={} dbname={} user={} password={}",
+        TM_STORAGE_HOST,
+        TM_STORAGE_PORT,
+        TM_STORAGE_DB,
+        TM_STORAGE_USER,
+        TM_STORAGE_PASS
+    );
 
     try {
         conn_  = std::make_unique<pqxx::connection>(connStr);
         state_ = TelemetryStorageState::CONNECTED;
         return state_;
     } catch (const std::exception &e) {
-        std::cerr << "DB Connection Error: " << e.what() << ". Retrying in 1s..." << std::endl;
+        log()->error("DB Connection Error: {}", e.what());
         state_ = TelemetryStorageState::ERROR;
         return state_;
     }
@@ -50,15 +59,12 @@ void TelemetryStorage::flush() {
     try {
         pqxx::work tx(*conn_);
 
-        // Using stream_to to bulk insert into TELEMETRY table (v6.4.5 compatible)
-        // Columns: time, app_id, voltage
-        auto writer = pqxx::stream_to::table(tx, {TM_STORAGE_TABLE}, {"time", "app_id", "voltage"});
+        auto writer = pqxx::stream_to::table(tx, {TM_STORAGE_TABLE}, {"app_id", "time", "voltage"});
 
         for (const auto &packet : batch_) {
             // Convert uint32_t timestamp (unix epoch) to a format Postgres
-            // understands
 
-            std::time_t t = static_cast<std::time_t>(packet.timestamp);
+            std::time_t t = static_cast<std::time_t>(packet.alignedTimestamp());
 
             struct tm tm_buf;
             gmtime_r(&t, &tm_buf);
@@ -66,7 +72,7 @@ void TelemetryStorage::flush() {
             char time_str[20];
             std::strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", &tm_buf);
 
-            writer << std::make_tuple(time_str, packet.appId, packet.alignedVoltage());
+            writer << std::make_tuple(packet.appId, time_str, packet.alignedVoltage());
         }
 
         writer.complete();
