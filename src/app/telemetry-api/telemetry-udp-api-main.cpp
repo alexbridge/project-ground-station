@@ -7,11 +7,10 @@
 #include "spdlog/logger.h"
 #include "telemetry-api/telemetry-udp-api.h"
 
-static app::TelemetryUdpApi *telemetryUdpApiPtr = nullptr;
-static std::shared_ptr<spdlog::logger> mainLogger = nullptr;
+static app::TelemetryUdpApi           *telemetryUdpApiPtr = nullptr;
+static std::shared_ptr<spdlog::logger> mainLogger         = nullptr;
 
-void signalHandler(int sig)
-{
+void signalHandler(int sig) {
     mainLogger->info("SIG {} stop", sig);
 
     if (telemetryUdpApiPtr) {
@@ -19,18 +18,14 @@ void signalHandler(int sig)
     }
 }
 
-int main()
-{
+int main() {
     mainLogger = lib::Logger::get("TelemetryUdpApiMain");
 
-    struct sigaction sa {
-    };
+    struct sigaction sa {};
     sa.sa_handler = signalHandler;
     sigaction(SIGINT, &sa, nullptr);
 
-    app::TelemetryUdpApi telemetryUdpApi{
-        5005,
-        app::TELEMETRY_SOCK_PATH};
+    app::TelemetryUdpApi telemetryUdpApi{5005, app::TELEMETRY_SOCK_PATH};
 
     telemetryUdpApiPtr = &telemetryUdpApi;
 

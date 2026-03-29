@@ -1,12 +1,13 @@
 #include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
 #include <chrono>
 #include <cstring>
 #include <iostream>
-#include <netinet/in.h>
 #include <random>
-#include <sys/socket.h>
 #include <thread>
-#include <unistd.h>
 
 #include "fmt/format.h"
 #include "logging/logger.h"
@@ -14,44 +15,38 @@
 #include "packet/telemetry-packet.hpp"
 #include "socket/udp-socket.h"
 
-telemetry::TelemetryPacket generateTelemetry(uint16_t rangeStart, uint16_t rangeEnd)
-{
-    static std::default_random_engine eng{std::random_device{}()};
+telemetry::TelemetryPacket generateTelemetry(uint16_t rangeStart, uint16_t rangeEnd) {
+    static std::default_random_engine randomEng{std::random_device{}()};
 
     // 16-bit appId
     static std::uniform_int_distribution<uint16_t> appIdDist(rangeStart, rangeEnd);
 
     // Current timestamp (seconds since epoch)
-    auto now = std::chrono::system_clock::now();
-    auto epoch = now.time_since_epoch();
-    uint32_t currentTimestamp = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(epoch).count());
+    auto     now   = std::chrono::system_clock::now();
+    auto     epoch = now.time_since_epoch();
+    uint32_t currT = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(epoch).count());
 
     // float battery voltage
     static std::uniform_real_distribution<float> voltDist(3.3f, 4.2f);
 
-    return telemetry::TelemetryPacket{
-        appIdDist(eng),
-        currentTimestamp,
-        voltDist(eng)};
+    return telemetry::TelemetryPacket{appIdDist(randomEng), currT, voltDist(randomEng)};
 }
 
-int main(int argc, char const *argv[])
-{
+int main(int argc, char const *argv[]) {
     auto mainLogger = lib::Logger::get("UdpProducer");
     if (argc != 4) {
         mainLogger->warn("Usage: {} <num_events> <app_id_start> <app_id_end>", argv[0]);
-
         return 1;
     }
 
-    int numEvents = 0;
+    int      numEvents  = 0;
     uint16_t rangeStart = 0;
-    uint16_t rangeEnd = 0;
+    uint16_t rangeEnd   = 0;
 
     try {
-        numEvents = std::stoi(argv[1]);
+        numEvents  = std::stoi(argv[1]);
         rangeStart = static_cast<uint16_t>(std::max(std::stoi(argv[2]), 0));
-        rangeEnd = static_cast<uint16_t>(std::max(std::stoi(argv[3]), 0));
+        rangeEnd   = static_cast<uint16_t>(std::max(std::stoi(argv[3]), 0));
     } catch (const std::exception &e) {
         mainLogger->warn("Invalid arguments: {} ", fmt::join(argv + 1, argv + argc, ", "));
         return 1;
@@ -82,20 +77,14 @@ int main(int argc, char const *argv[])
         // Host to network
         hton(packet);
 
-        ssize_t sent = send(
-            sockFd,
-            reinterpret_cast<const char *>(&packet),
-            sizeof(packet),
-            0);
+        ssize_t sent = send(sockFd, reinterpret_cast<const char *>(&packet), sizeof(packet), 0);
 
         if (sent <= 0) {
             perror("sendto error");
             break;
         }
 
-        mainLogger->info(".");
-
-        if (i % 1024 == 0) {
+        if (i > 0 && i % 1024 == 0) {
             mainLogger->info(".. sent 1024");
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }

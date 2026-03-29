@@ -20,18 +20,14 @@ telemetry::TelemetryPacket generateTelemetry(uint16_t rangeStart, uint16_t range
     static std::uniform_int_distribution<uint16_t> appIdDist(rangeStart, rangeEnd);
 
     // Current timestamp (seconds since epoch)
-    auto     now   = std::chrono::system_clock::now();
-    auto     epoch = now.time_since_epoch();
-    uint32_t currentTimestamp =
-        static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(epoch).count());
+    auto     now              = std::chrono::system_clock::now();
+    auto     epoch            = now.time_since_epoch();
+    uint32_t currentTimestamp = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::seconds>(epoch).count());
 
     // float battery voltage
     static std::uniform_real_distribution<float> voltDist(3.3f, 4.2f);
 
-    return telemetry::TelemetryPacket{
-        appIdDist(randomEngine),
-        currentTimestamp,
-        voltDist(randomEngine)};
+    return telemetry::TelemetryPacket{appIdDist(randomEngine), currentTimestamp, voltDist(randomEngine)};
 }
 
 int main(int argc, char const *argv[]) {
@@ -69,11 +65,7 @@ int main(int argc, char const *argv[]) {
 
     int udpSockFd = afUnixUdpSock.sockFd();
 
-    mainLogger->info(
-        "AF-sock connected: {}, actual buffer size {}",
-        udpSockFd,
-        afUnixUdpSock.actualBufSize().value()
-    );
+    mainLogger->info("AF-sock connected: {}, actual buffer size {}", udpSockFd, afUnixUdpSock.actualBufSize().value());
 
     mainLogger->info("Sending {} events", numEvents);
 
@@ -95,7 +87,7 @@ int main(int argc, char const *argv[]) {
 
         mainLogger->info("sent");
 
-        if (i % 100 == 0) {
+        if (i > 0 && i % 100 == 0) {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
     }

@@ -18,10 +18,13 @@ clean:
 	rm -rf $(BUILD_DIR)
 
 telemetry-udp-api:
-	@./$(BUILD_DIR)/src/app/telemetry_api
+	@$(VALGRIND) ./$(BUILD_DIR)/src/app/telemetry_api
 
 telemetry-af-unix-ingestor:
 	@$(VALGRIND) ./$(BUILD_DIR)/src/app/telemetry_ingestor
+
+telemetry-udp-producer:
+	@./$(BUILD_DIR)/test/udp_producer 10 0 64000
 
 telemetry-af-unix-producer:
 	@./$(BUILD_DIR)/test/af_unix_dgram_producer 8192 0 64000
