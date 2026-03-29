@@ -5,7 +5,7 @@
 
 namespace app {
 
-constexpr static const char *TELEMETRY_SOCK_PATH = "/opt/telemetry.sock";
+constexpr static const char *TELEMETRY_SOCK_PATH = "/opt/sock/telemetry.sock";
 
 struct ServerSockStats {
     size_t reads{0};

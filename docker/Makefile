@@ -15,6 +15,8 @@ docker-run-db:
 docker-stop-db:
 	docker compose -f $(DB) down -v
 
+docker-apps-build:
+	docker compose -f $(APPS) build --no-cache
 docker-apps-start:
 	docker compose -f $(APPS) up -d --build --force-recreate
 docker-apps-stop:

@@ -13,12 +13,13 @@ RUN apk add --no-cache libstdc++ libpq && \
     addgroup -g 1000 appgroup && \
     adduser -u 1000 -G appgroup -S -H appuser
 
-RUN mkdir -p /opt && chown appuser:appgroup /opt
+RUN mkdir -p /opt/app && chown appuser:appgroup /opt/app
+RUN mkdir -p /opt/sock && chown appuser:appgroup /opt/sock
 WORKDIR /opt/app
-COPY --from=builder --chown=appuser:appgroup /build/build/src/app/telemetry_ingestor ./app
-RUN chmod +x ./app
+COPY --from=builder --chown=appuser:appgroup /build/build/src/app/telemetry_ingestor ./telemetry_ingestor
+RUN chmod +x ./telemetry_ingestor
 USER appuser
-CMD ["./app"]
+CMD ["./telemetry_ingestor"]
 
 FROM alpine:3.18 AS telemetry_api
 
@@ -26,9 +27,11 @@ RUN apk add --no-cache libstdc++ libpq && \
     addgroup -g 1000 appgroup && \
     adduser -u 1000 -G appgroup -S -H appuser
 
-RUN mkdir -p /opt && chown appuser:appgroup /opt
+RUN mkdir -p /opt/app && chown appuser:appgroup /opt/app
+RUN mkdir -p /opt/sock && chown appuser:appgroup /opt/sock
+
 WORKDIR /opt/app
-COPY --from=builder --chown=appuser:appgroup /build/build/src/app/telemetry_api ./app
-RUN chmod +x ./app
+COPY --from=builder --chown=appuser:appgroup /build/build/src/app/telemetry_api ./telemetry_api
+RUN chmod +x ./telemetry_api
 USER appuser
-CMD ["./app"]
+CMD ["./telemetry_api"]
