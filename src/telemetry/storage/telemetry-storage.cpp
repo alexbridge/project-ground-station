@@ -7,12 +7,11 @@
 #include <pqxx/pqxx>
 #include <string>
 
-#include "packet/telemetry-helpers.hpp"
 #include "utils/env-utils.h"
 
 namespace telemetry {
 
-const std::string     TM_STORAGE_HOST  = lib::getEnv("TELEMETRY_DB_HOST", "localhost");
+const char           *TM_STORAGE_HOST  = lib::getEnv("TELEMETRY_DB_HOST", "localhost");
 constexpr const char *TM_STORAGE_PORT  = "5432";
 constexpr const char *TM_STORAGE_DB    = "GROUND_STATION";
 constexpr const char *TM_STORAGE_TABLE = "TELEMETRY";

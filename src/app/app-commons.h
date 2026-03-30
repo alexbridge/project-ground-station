@@ -3,9 +3,11 @@
 
 #include <cstddef>
 
+#include "utils/env-utils.h"
+
 namespace app {
 
-constexpr static const char *TELEMETRY_SOCK_PATH = "/opt/sock/telemetry.sock";
+inline const char *TELEMETRY_SOCK_PATH = lib::getEnv("TELEMETRY_AF_SOCK", "/tmp/telemetry.sock");
 
 struct ServerSockStats {
     size_t reads{0};

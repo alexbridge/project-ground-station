@@ -70,3 +70,23 @@ The build system leverages CMake's `FetchContent` for managing external dependen
 ## 5. Conclusion
 
 The telemetry system is architecturally sound and demonstrates good C++ practices, particularly in its use of modern CMake, thread-safe queues, and socket abstractions. The primary concern is the **security vulnerability of hardcoded database credentials**. Addressing this, along with enhancing error handling and clarifying data representation for portability, will significantly improve the system's robustness and security.
+
+
+Common C++ pitfalls worth knowing:
+
+  1. Dangling references — returning a reference/pointer to a local variable that's already destroyed
+  2. Undefined behavior (UB) — e.g. signed integer overflow, accessing freed memory, dereferencing null — the
+  compiler can do anything
+  3. Slicing — passing a derived class by value to a base class parameter, losing the derived part
+  4. Double free — freeing the same memory twice (why smart pointers exist)
+  5. Iterator invalidation — modifying a container while iterating over it
+  6. Include order dependencies — headers that only compile if included after some other header
+  7. Static initialization order fiasco — global/static objects in different .cpp files with undefined init
+  order
+
+  These are all well-documented. A good resource that covers them practically is the C++ Core Guidelines by
+  Bjarne Stroustrup and Herb Sutter — it's free, searchable, and organized by topic
+
+  https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines
+
+  https://en.cppreference.com/w/cpp/language/inline.html
