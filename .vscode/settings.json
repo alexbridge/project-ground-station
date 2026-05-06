@@ -1,0 +1,13 @@
+{
+    "clangd.path": "/usr/bin/clangd",
+    "clangd.arguments": [
+        "--header-insertion=iwyu",
+        "--completion-style=detailed",
+        "--background-index",
+        "--compile-commands-dir=${workspaceFolder}/build",
+        "--clang-tidy",
+        "--all-scopes-completion"
+    ],
+    "editor.suggestSelection": "first",
+    "editor.acceptSuggestionOnEnter": "on"
+}

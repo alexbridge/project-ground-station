@@ -1,104 +1,49 @@
-.SHELL := /bin/bash
+BUILD_DIR := build
+BUILD_TYPE :=Release
+VALGRIND := valgrind --leak-check=full --track-origins=yes
 
-CCC := clang++
+.PHONY: init build clean install-deps clangd-check \
+        telemetry-api telemetry-ingestor
 
-# Key flags:
-# -Werror — treat warnings as errors (remove if too strict initially)
-# -fsanitize=address,undefined — catch memory bugs & UB in debug
-# -flto — link-time optimization for release
-# -fstack-protector-strong + _FORTIFY_SOURCE — hardening
-# -Wshadow -Wconversion — catches subtle bugs
-# -static <- full build
-CCC_OPTS := -std=c++17 \
-			-Wall -Wextra -Wpedantic -Werror \
-            -Wshadow -Wconversion -Wsign-conversion \
-            -Wnull-dereference -Wdouble-promotion \
-            -fstack-protector-strong \
-            -D_FORTIFY_SOURCE=2
-CCC_OPTS_COMPILE := $(CCC_OPTS) -c
+install-deps:
+	sudo apt install clang clangd clang-format clang-tidy cmake valgrind libpq-dev
 
-IMAGE_BUILDER := clang/clang17:builder
-IMAGE_RUNNER := clang/clang17:runner
-DOCKER_USER := --user "$$(id -u):$$(id -g)"
-BUILDER := docker run -it -v .:/app -w /app --rm $(IMAGE_BUILDER)
-RUNNER := docker run -it $(DOCKER_USER) -v .:/app -w /app -p 8080:8080 --rm $(IMAGE_RUNNER)
+init:
+	cmake -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -S . -B $(BUILD_DIR)
 
-tag-builder:
-	docker build -f ./docker/Builder -t $(IMAGE_BUILDER) .
-tag-runner:
-	docker build -f ./docker/Runner -t $(IMAGE_RUNNER) .
-tag: tag-builder tag-runner
-exec-builder:
-	$(BUILDER) sh
-exec-runner:
-	$(RUNNER) sh
+build:
+	cmake --build $(BUILD_DIR)
 
-NON_APPS_CPP := $(shell find src -name "*.cpp" ! -wholename "src/apps/*")
-# src/utils/string.cpp -> utils/string.cpp
-NON_APPS_CPP_RELATIVE := $(shell find src -name "*.cpp" ! -wholename "src/apps/*" | cut -c5-)
-NON_APPS_CPP_O := $(patsubst %.cpp,build/%.o,$(NON_APPS_CPP_RELATIVE))
+clean:
+	rm -rf $(BUILD_DIR)
 
-echo:
-	@echo $(NON_APPS_CPP_RELATIVE)
-	@echo $(NON_APPS_CPP_O)
-	@echo $(ALL_CPP)
-	@echo $(ALL_CPP_O)
+telemetry-udp-api:
+	@$(VALGRIND) ./$(BUILD_DIR)/src/app/telemetry_api
 
-# build-socket-server:
-# 	@$(BUILDER) $(CCC) $(CCC_OPTS) $(NON_APPS_CPP) src/apps/socket-server.cpp -o bin/socket-server
-# run-socket-server:
-# 	$(RUNNER) ./bin/socket-server
+telemetry-af-unix-ingestor:
+	@$(VALGRIND) ./$(BUILD_DIR)/src/app/telemetry_ingestor
 
-# ===== COMPILE AND LINK SEPARATELY
-ALL_CPP := $(shell find src -name "*.cpp")
-ALL_CPP_RELATIVE := $(shell find src -name "*.cpp")
-ALL_CPP_O := $(patsubst src/%.cpp,build/%.o,$(ALL_CPP_RELATIVE))
-
-clean-bin:
-	rm -fr bin/*
-clean-build:
-	rm -fr build/*
-
-build/%.o: src/%.cpp
-	@[ -d "$(@D)" ] || mkdir -p "$(@D)"
-	@$(BUILDER) $(CCC) $(CCC_OPTS_COMPILE) $< -o $(@)
-	@echo "$@ compiled"
-
-build-all: $(ALL_CPP_O)
-
-telemetry-producer:
-	$(CCC) $(CCC_OPTS) \
-	test/socket-telemetry-producer.cpp \
-	-o bin/telemetry_producer
-	#valgrind --leak-check=full --show-leak-kinds=all ./bin/telemetry_producer 5 0 65000
-	read -p "Number of events: " EVENTS; \
-	./bin/telemetry_producer $$EVENTS 0 65000 
 telemetry-udp-producer:
-	$(CCC) $(CCC_OPTS) \
-	test/udp-telemetry-producer.cpp \
-	-o bin/udp_telemetry_producer
-	read -p "Number of events: " EVENTS; \
-	./bin/udp_telemetry_producer $$EVENTS 0 65000 
-telemetry-server:
-	$(CCC) $(CCC_OPTS) \
-	-lpqxx -lpq \
-	src/telemetry-server/socket-telemetry-server.cpp \
-	src/telemetry-server/telemetry-server.cpp \
-	-o bin/telemetry_server
-	#valgrind --leak-check=full --show-leak-kinds=definite ./bin/telemetry_server
-	./bin/telemetry_server
-telemetry-udp-producer:
-	$(CCC) $(CCC_OPTS) \
-	test/udp-telemetry-producer.cpp \
-	-o bin/udp_telemetry_producer
-	read -p "Number of events: " EVENTS; \
-	./bin/udp_telemetry_producer $$EVENTS 0 65000 
-telemetry-udp-server:
-	$(CCC) $(CCC_OPTS) \
-	src/telemetry-server/udp-telemetry-server.cpp \
-	src/telemetry-server/telemetry-server.cpp \
-	-o bin/udp_telemetry_server
-	./bin/udp_telemetry_server
+	@./$(BUILD_DIR)/test/udp_producer 10 0 64000
 
+telemetry-af-unix-producer:
+	@./$(BUILD_DIR)/test/af_unix_dgram_producer 8192 0 64000
 
-.PHONY: build-all
+clangd-check:
+	@find . -type f \( -name '*.h' -o -name '*.cpp' -o -name '*.hpp' \) | while read f; do \
+		output=$$(clangd --check="$$f" 2>&1); \
+		if [ $$? -gt 0 ]; then \
+			echo ""; \
+			echo "=== FAIL: $$f ==="; \
+			echo "$$output" | tail -7; \
+			echo "=== FAIL: $$f ==="; \
+			echo ""; \
+		else \
+			echo "OK: $$f"; \
+		fi \
+	done
+
+docker-run-db:
+	cd docker && docker compose -f docker-compose-db.yml up -d
+docker-stop-db:
+	cd docker && docker compose -f docker-compose-db.yml down -v

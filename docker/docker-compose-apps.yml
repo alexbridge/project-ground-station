@@ -1,0 +1,39 @@
+services:
+  telemetry_ingestor:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: telemetry_ingestor
+    container_name: "${COMPOSE_PROJECT_NAME}-ingestor"
+    restart: unless-stopped
+    volumes:
+      - sockets:/opt/sock:rw
+    environment:
+      TELEMETRY_DB_HOST: timescaledb
+      TELEMETRY_AF_SOCK: "/opt/sock/telemetry.sock"
+    healthcheck:
+      test: [ "CMD-SHELL", "grep -q RUNNING /opt/app/status || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  telemetry_api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: telemetry_api
+    container_name: "${COMPOSE_PROJECT_NAME}-api"
+    restart: unless-stopped
+    environment:
+      TELEMETRY_AF_SOCK: "/opt/sock/telemetry.sock"
+    ports:
+      - 5005
+    volumes:
+      - sockets:/opt/sock:ro
+    healthcheck:
+      test: [ "CMD-SHELL", "grep -q RUNNING /opt/app/status || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  sockets:
